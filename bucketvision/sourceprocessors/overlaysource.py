@@ -1,7 +1,10 @@
 import cv2
 
 
-class ResizeSource(object):
+class OverlaySource(object):
+    """
+    This overlays the source image with a green line
+    """
     def __init__(self, base_source, res=None):
         self._base_source = base_source
         if res is not None:
@@ -13,7 +16,8 @@ class ResizeSource(object):
 
     @property
     def frame(self):
-        return cv2.resize(self._base_source.frame, (self.width, self.height))
+        # draw a green line down the middle
+        return cv2.line(self._base_source.frame, (self.width // 2, self.height), (self.width // 2, 0), (0, 255, 0), 2)
 
     @property
     def exposure(self):
@@ -22,6 +26,22 @@ class ResizeSource(object):
     @exposure.setter
     def exposure(self, val):
         self._base_source.exposure = val
+
+    @property
+    def width(self):
+        return self._base_source.width
+
+    @width.setter
+    def width(self, val):
+        self._base_source.width = val
+
+    @property
+    def height(self):
+        return self._base_source.height
+
+    @height.setter
+    def height(self, val):
+        self._base_source.height = val
 
     @property
     def new_frame(self):

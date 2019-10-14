@@ -52,9 +52,32 @@ pip install opencv-python==3.4.7.28
 pip install Cython
 ```
 
-Download the source code for the version of opencv you want (version 3 for this)
-Create a directory within the source code folder called 'build'
-cd into build
-enter 'cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=RELEASE ../'
-enter 'make install'
-Now, when I tried installing with 'pip3 install robotpy-cscore', it said it could not find the file 'cscore_src/wpiutil/src/main/native/libuv/unix/bsd-ifaddrs.cpp'. To fix this, I downloaded robotpy-cscore to my machine, downloaded cscore_src, and downloaded pybind11 (linked to from this github repo). Then, I ran 'pip3 install --no-build-isolation .' inside the folder 'robotpy-cscore'.
+### Compile opencv from source
+
+```bash
+git clone git@github.com:opencv/opencv.git
+cd opencv
+
+# create a build dir for our build config
+mkdir -p build
+cd build
+
+# compile it with shared libs
+cmake -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=RELEASE ../
+
+# install it on your system
+make install
+```
+
+### Install robotpy-cscore from source
+```bash
+git clone git@github.com:robotpy/robotpy-cscore.git
+cd robotpy-cscore
+
+# init git submodules
+git submodule init
+git submodule update
+
+# install to your virtual machine above from robopy-cscore
+pip3 install --no-build-isolation .
+```

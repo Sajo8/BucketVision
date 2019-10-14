@@ -27,6 +27,10 @@ class DelegatedSource(object):
 
 
 class Mux1N:
+    """
+    This multiplexer takes a series of input sources and creates one
+    output source
+    """
     def __init__(self, source):
         self._base_source = source
         self._sources = []

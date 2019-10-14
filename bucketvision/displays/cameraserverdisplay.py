@@ -4,7 +4,10 @@ import threading
 from cscore import CameraServer
 
 
-class CSDisplay(threading.Thread):
+class CameraServerDisplay(threading.Thread):
+    """
+    This displays output to the CameraServer (i.e. you are running on the robot)
+    """
     colors = [
         (75, 25, 230),
         (25, 225, 255),
@@ -75,6 +78,11 @@ class CSDisplay(threading.Thread):
         return ret_data
 
     def drawtargets(self, image):
+        """
+        Not currently used...
+        :param image:
+        :return:
+        """
         if self.net_table is None:
             return image
         if self.net_table.getBoolean('Overlay', False):
@@ -108,7 +116,7 @@ class CSDisplay(threading.Thread):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    sink = CSDisplay()
+    sink = CameraServerDisplay()
     sink.start()
 
     import cv2

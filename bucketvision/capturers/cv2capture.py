@@ -15,6 +15,9 @@ except ImportError:
 
 
 class Cv2Capture(threading.Thread):
+    """
+    This thread continually captures frames from a camera
+    """
     def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
         self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
         self.camera_num = camera_num

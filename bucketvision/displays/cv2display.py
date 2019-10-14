@@ -1,10 +1,13 @@
 import threading
 import logging
-
 import cv2
 
 
 class Cv2Display(threading.Thread):
+    """
+    This displays output to a cv2 window (i.e. you are testing locally)
+    """
+
     def __init__(self, source=None, window_name="Camera0"):
         self.logger = logging.getLogger("Cv2Display")
         self.window_name = window_name
@@ -37,12 +40,6 @@ class Cv2Display(threading.Thread):
             if self.source is not None:
                 if self.source.new_frame:
                     self.frame = self.source.frame
-            if self._new_frame:
-                cv2.imshow(self.window_name, self._frame)
-                self._new_frame = False
-            cv2.waitKey(1)
-        cv2.destroyAllWindows()
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

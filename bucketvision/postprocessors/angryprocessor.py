@@ -3,11 +3,15 @@ import logging
 
 import time
 
-from bucketvision.processors.processimage import ProcessImage
+from bucketvision.postprocessors.processimage import ProcessImage
 from bucketvision.configs import configs
 
 
 class AngryProcessor(threading.Thread):
+    """
+    The AngryProcessor takes a source that has been resized and uses ProcessImage() to
+    find a draw a target on the output before sending it to NetworkTables
+    """
     def __init__(self, source=None, network_table=None, debug_label=""):
         self.logger = logging.getLogger("AngryProcesses")
         self.net_table = network_table
@@ -115,8 +119,8 @@ class AngryProcessor(threading.Thread):
 
 
 if __name__ == '__main__':
-    from bucketvision.threads.cv2capture import Cv2Capture
-    from bucketvision.threads.cv2display import Cv2Display
+    from bucketvision.capturers.cv2capture import Cv2Capture
+    from bucketvision.displays.cv2display import Cv2Display
 
     logging.basicConfig(level=logging.DEBUG)
 
