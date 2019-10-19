@@ -39,7 +39,7 @@ class Cv2Display(threading.Thread):
         while not self.stopped:
             if self.source is not None:
                 if self.source.new_frame:
-                    self.frame = self.source.frame
+                    self.frame = self.source.process_frame()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

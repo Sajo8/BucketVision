@@ -2,8 +2,11 @@ import threading
 import logging
 
 import time
+from typing import List, Union
 
-from bucketvision.postprocessors.processimage import ProcessImage
+from bucketvision.capturers.cv2capture import Cv2Capture
+from bucketvision.multiplexers.output_mux_1_to_n import OutputMux1toN
+from bucketvision.postprocessors.processimage import ProcessImage, VisionTarget
 from bucketvision.configs import configs
 
 
@@ -12,7 +15,7 @@ class AngryProcessor(threading.Thread):
     The AngryProcessor takes a source that has been resized and uses ProcessImage() to
     find a draw a target on the output before sending it to NetworkTables
     """
-    def __init__(self, source=None, network_table=None, debug_label=""):
+    def __init__(self, source: Union[OutputMux1toN, Cv2Capture] = None, network_table=None, debug_label=""):
         self.logger = logging.getLogger("AngryProcesses")
         self.net_table = network_table
         self.source = source
@@ -28,7 +31,7 @@ class AngryProcessor(threading.Thread):
 
         self.processor = ProcessImage()
 
-        self.results = list()
+        self.results: List[VisionTarget] = list()
 
         self.camera_res = configs['camera_res']
         self.stopped = True
@@ -92,7 +95,7 @@ class AngryProcessor(threading.Thread):
                 self.last_frame_time = time.time()
                 # print("\nAP: {} gets frame at {}".format(self.debug_label, self.last_frame_time))
                 if self.source is not None:
-                    frame = self.source.frame
+                    frame = self.source.next_frame()
                 else:
                     frame = self.frame
                 crop_top = int(self.camera_res[1] * configs['crop_top'])
@@ -119,7 +122,8 @@ class AngryProcessor(threading.Thread):
 
 
 if __name__ == '__main__':
-    from bucketvision.capturers.cv2capture import Cv2Capture
+    from bucketvision.capturers.cv2capture import Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, \
+    Cv2Capture
     from bucketvision.displays.cv2display import Cv2Display
 
     logging.basicConfig(level=logging.DEBUG)

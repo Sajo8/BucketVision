@@ -1,32 +1,18 @@
+from typing import Tuple
+
 import cv2
 
+from bucketvision.multiplexers.output_mux_1_to_n import DelegatedSource
+from bucketvision.sourceprocessors.source_processor import SourceProcessor
 
-class ResizeSource(object):
+
+class ResizeSource(SourceProcessor):
     """
     This resizes the source image to our target resolution (i.e. 320x200)
     """
-    def __init__(self, base_source, res=None):
-        self._base_source = base_source
-        if res is not None:
-            self.width = res[0]
-            self.height = res[1]
-        else:
-            self.width = int(self._base_source.width)
-            self.height = int(self._base_source.height)
+    def __init__(self, base_source: DelegatedSource, res: Tuple[int, int] = None) -> None:
+        SourceProcessor.__init__(self, base_source, res)
 
-    @property
-    def frame(self):
+    def process_frame(self):
         # resize this frame
-        return cv2.resize(self._base_source.frame, (self.width, self.height))
-
-    @property
-    def exposure(self):
-        return self._base_source.exposure
-
-    @exposure.setter
-    def exposure(self, val):
-        self._base_source.exposure = val
-
-    @property
-    def new_frame(self):
-        return self._base_source.new_frame
+        return cv2.resize(self.base_source.next_frame(), (int(self.width), int(self.height)))

@@ -1,48 +1,17 @@
+from typing import Tuple
+
 import cv2
 
+from bucketvision.sourceprocessors.source_processor import SourceProcessor
 
-class OverlaySource(object):
+
+class OverlaySource(SourceProcessor):
     """
     This overlays the source image with a green line
     """
-    def __init__(self, base_source, res=None):
-        self._base_source = base_source
-        if res is not None:
-            self.width = res[0]
-            self.height = res[1]
-        else:
-            self.width = int(self._base_source.width)
-            self.height = int(self._base_source.height)
+    def __init__(self, base_source: SourceProcessor, res: Tuple[int, int] = None) -> None:
+        SourceProcessor.__init__(self, base_source, res)
 
-    @property
-    def frame(self):
+    def process_frame(self):
         # draw a green line down the middle
-        return cv2.line(self._base_source.frame, (self.width // 2, self.height), (self.width // 2, 0), (0, 255, 0), 2)
-
-    @property
-    def exposure(self):
-        return self._base_source.exposure
-
-    @exposure.setter
-    def exposure(self, val):
-        self._base_source.exposure = val
-
-    @property
-    def width(self):
-        return self._base_source.width
-
-    @width.setter
-    def width(self, val):
-        self._base_source.width = val
-
-    @property
-    def height(self):
-        return self._base_source.height
-
-    @height.setter
-    def height(self, val):
-        self._base_source.height = val
-
-    @property
-    def new_frame(self):
-        return self._base_source.new_frame
+        return cv2.line(self.base_source.process_frame(), (int(self.width // 2), int(self.height)), (int(self.width // 2), 0), (0, 255, 0), 2)

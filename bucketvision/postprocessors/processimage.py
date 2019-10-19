@@ -1,5 +1,6 @@
 import math
 import os
+from typing import List
 
 import numpy as np
 import cv2
@@ -200,7 +201,7 @@ class ProcessImage(object):
     def __init__(self):
         pass
 
-    def FindTarget(self, image):
+    def FindTarget(self, image) -> List[VisionTarget]:
         height, width, _ = image.shape
         image_area = height * width
 

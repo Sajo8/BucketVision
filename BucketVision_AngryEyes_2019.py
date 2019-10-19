@@ -1,3 +1,5 @@
+from typing import List
+
 import cv2
 import logging
 import argparse
@@ -9,8 +11,8 @@ from bucketvision.capturers.cv2capture import Cv2Capture
 from bucketvision.displays.cv2display import Cv2Display
 from bucketvision.displays.cameraserverdisplay import CameraServerDisplay
 from bucketvision.postprocessors.angryprocessor import AngryProcessor
-from bucketvision.multiplexers.class_mux import ClassMux
-from bucketvision.multiplexers.mux1n import Mux1N
+from bucketvision.multiplexers.capture_source_mux import CaptureSourceMux
+from bucketvision.multiplexers.output_mux_1_to_n import OutputMux1toN
 from bucketvision.sourceprocessors.resizesource import ResizeSource
 from bucketvision.sourceprocessors.overlaysource import OverlaySource
 
@@ -64,18 +66,18 @@ if __name__ == '__main__':
     VisionTable.putNumber("Exposure", 50.0)
 
     # create a source per camera
-    source_list = list()
+    capture_sources: List[Cv2Capture] = list()
     for i in range(args.num_cam):
         cap = Cv2Capture(camera_num=i + args.offs_cam, network_table=VisionTable, exposure=0.01,
                          res=configs['camera_res'])
-        source_list.append(cap)
+        capture_sources.append(cap)
         cap.start()
         cap.exposure = 10
 
     # send each source through our source processors
     # these do things like resize the image and draw a simple center line
-    source_mux = ClassMux(*source_list)
-    output_mux = Mux1N(source_mux)
+    capture_source_mux = CaptureSourceMux(capture_sources)
+    output_mux = OutputMux1toN(capture_source_mux)
     process_output = output_mux.create_output()
     display_output = OverlaySource(ResizeSource(output_mux.create_output(), res=configs['output_res']))
 
@@ -104,7 +106,7 @@ if __name__ == '__main__':
     try:
         VisionTable.putValue("CameraNum", 0)
         while True:
-            source_mux.source_num = int(VisionTable.getEntry("CameraNum").value)
+            capture_source_mux.source_num = int(VisionTable.getEntry("CameraNum").value)
             if args.test:
                 if window_display._new_frame:
                     cv2.imshow(window_display.window_name, window_display._frame)
@@ -121,7 +123,7 @@ if __name__ == '__main__':
             cs_display.stop()
         for proc in proc_list:
             proc.stop()
-        for cap in source_list:
+        for cap in capture_sources:
             cap.stop()
 
 

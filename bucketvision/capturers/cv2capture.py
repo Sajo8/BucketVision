@@ -26,12 +26,12 @@ class Cv2Capture(threading.Thread):
         # first vars
         self._exposure = exposure
 
-        self.cap = cv2.VideoCapture()
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-        self.cap.open(self.camera_num)
-        self.cap_open = self.cap.isOpened()
-        if self.cap_open is False:
-            self.cap_open = False
+        self.capture = cv2.VideoCapture()
+        self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
+        self.capture.open(self.camera_num)
+        self.capture_open = self.capture.isOpened()
+        if self.capture_open is False:
+            self.capture_open = False
             self.write_table_value("Camera{}Status".format(camera_num),
                                    "Failed to open camera {}!".format(camera_num),
                                    level=logging.CRITICAL)
@@ -39,7 +39,7 @@ class Cv2Capture(threading.Thread):
         if res is not None:
             self.camera_res = res
         else:
-            self.camera_res = (self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.camera_res = (self.capture.get(cv2.CAP_PROP_FRAME_WIDTH), self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
         # Threading Locks
         self.capture_lock = threading.Lock()
@@ -63,8 +63,8 @@ class Cv2Capture(threading.Thread):
         with self.frame_lock:
             self._new_frame = val
 
-    @property
-    def frame(self):
+    def next_frame(self):
+        """Return the next frame, when available"""
         with self.frame_lock:
             self._new_frame = False
         # For maximum thread (or process) safety, you should copy the frame, but this is very expensive
@@ -72,9 +72,9 @@ class Cv2Capture(threading.Thread):
 
     @property
     def width(self):
-        if self.cap_open:
+        if self.capture_open:
             with self.capture_lock:
-                return self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+                return self.capture.get(cv2.CAP_PROP_FRAME_WIDTH)
         else:
             return float("NaN")
 
@@ -82,9 +82,9 @@ class Cv2Capture(threading.Thread):
     def width(self, val):
         if val is None:
             return
-        if self.cap_open:
+        if self.capture_open:
             with self.capture_lock:
-                self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, int(val))
+                self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, int(val))
             self.write_table_value("Width", int(val))
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
@@ -93,9 +93,9 @@ class Cv2Capture(threading.Thread):
 
     @property
     def height(self):
-        if self.cap_open:
+        if self.capture_open:
             with self.capture_lock:
-                return self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+                return self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT)
         else:
             return float("NaN")
 
@@ -103,9 +103,9 @@ class Cv2Capture(threading.Thread):
     def height(self, val):
         if val is None:
             return
-        if self.cap_open:
+        if self.capture_open:
             with self.capture_lock:
-                self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, int(val))
+                self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, int(val))
             self.write_table_value("Height", int(val))
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
@@ -122,11 +122,11 @@ class Cv2Capture(threading.Thread):
             return
         val = int(val)
         self._exposure = val
-        if self.cap_open:
+        if self.capture_open:
             with self.capture_lock:
                 if os.name == 'nt':
                     # self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
-                    self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
+                    self.capture.set(cv2.CAP_PROP_EXPOSURE, val)
                 else:
                     os.system("v4l2-ctl -c exposure_absolute={} -d {}".format(val, self.camera_num))
                     print("!! Exposure set to: {}".format(val))
@@ -174,7 +174,7 @@ class Cv2Capture(threading.Thread):
             except:
                 pass
             with self.capture_lock:
-                _, img = self.cap.read()
+                _, img = self.capture.read()
             with self.frame_lock:
                 self._frame = img
                 if first_frame:
@@ -205,7 +205,7 @@ if __name__ == '__main__':
     print("Getting Frames")
     while True:
         if camera.new_frame:
-            cv2.imshow('my webcam', camera.frame)
+            cv2.imshow('my webcam', camera.next_frame())
         if cv2.waitKey(1) == 27:
             break  # esc to quit
     camera.stop()
