@@ -14,3 +14,5 @@ GRIP/
 build/
 venv/
 .DS_Store
+
+.mypy_cache/
