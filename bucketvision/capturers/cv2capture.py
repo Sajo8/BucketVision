@@ -1,10 +1,9 @@
-import threading
 import logging
+import threading
 import time
+import os
 
 import cv2
-
-import os
 
 from bucketvision.configs import configs
 
@@ -18,6 +17,7 @@ class Cv2Capture(threading.Thread):
     """
     This thread continually captures frames from a camera
     """
+
     def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
         self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
         self.camera_num = camera_num
@@ -27,8 +27,8 @@ class Cv2Capture(threading.Thread):
         self._exposure = exposure
 
         self.capture = cv2.VideoCapture()
-        self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         self.capture.open(self.camera_num)
+        self.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
         self.capture_open = self.capture.isOpened()
         if self.capture_open is False:
             self.capture_open = False
@@ -51,6 +51,9 @@ class Cv2Capture(threading.Thread):
         self.stopped = True
         self.exposure = exposure
         threading.Thread.__init__(self)
+
+    def has_new_frame(self) -> bool:
+        return self.new_frame
 
     @property
     def new_frame(self):
@@ -200,11 +203,11 @@ if __name__ == '__main__':
     camera = Cv2Capture(network_table=FrontCameraTable)
     camera.start()
 
-    os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
+    os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brightness']))
 
     print("Getting Frames")
     while True:
-        if camera.new_frame:
+        if camera.has_new_frame():
             cv2.imshow('my webcam', camera.next_frame())
         if cv2.waitKey(1) == 27:
             break  # esc to quit

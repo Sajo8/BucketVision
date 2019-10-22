@@ -9,6 +9,7 @@ class OutputMux1toN:
     This multiplexer takes a series of input sources and creates one
     output source
     """
+
     def __init__(self, capture_source_mux: CaptureSourceMux):
         self.capture_source_mux = capture_source_mux
         self.outputs: List[DelegatedSource] = []
@@ -19,7 +20,7 @@ class OutputMux1toN:
             for output in self.outputs:
                 output._new_frame = True
 
-    def create_output(self):
+    def create_output(self) -> DelegatedSource:
         output = DelegatedSource(self, self.capture_source_mux)
         self.outputs.append(output)
         return output

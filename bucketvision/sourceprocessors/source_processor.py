@@ -7,42 +7,34 @@ class SourceProcessor:
     """
     This is a base class for the resize and overlay source processors we have
     """
-    def __init__(self, base_source: Union['SourceProcessor', DelegatedSource], res: Tuple[int, int] = None) -> None:
-        self.base_source = base_source
+
+    def __init__(self, source: Union['SourceProcessor', DelegatedSource], res: Tuple[int, int] = None) -> None:
+        self.source = source
         if res is not None:
-            self.width = res[0]
-            self.height = res[1]
+            self.source_width = res[0]
+            self.source_height = res[1]
         else:
-            self.width = int(self.base_source.width)
-            self.height = int(self.base_source.height)
+            self.source_width = int(self.source.source_width)
+            self.source_height = int(self.source.source_height)
 
     def process_frame(self) -> None:
         raise NotImplementedError("Subclasses of SourceProcessor must implement process_frame() method")
 
     @property
-    def exposure(self) -> int:
-        return self.base_source.exposure
+    def source_width(self) -> int:
+        return self.source.source_width
 
-    @exposure.setter
-    def exposure(self, val: int) -> None:
-        self.base_source.exposure = val
-
-    @property
-    def width(self) -> int:
-        return self.base_source.width
-
-    @width.setter
-    def width(self, val: int) -> None:
-        self.base_source.width = val
+    @source_width.setter
+    def source_width(self, val: int) -> None:
+        self.source.source_width = val
 
     @property
-    def height(self) -> int:
-        return self.base_source.height
+    def source_height(self) -> int:
+        return self.source.source_height
 
-    @height.setter
-    def height(self, val: int) -> None:
-        self.base_source.height = val
+    @source_height.setter
+    def source_height(self, val: int) -> None:
+        self.source.source_height = val
 
-    @property
-    def new_frame(self) -> bool:
-        return self.base_source.new_frame
+    def has_new_frame(self) -> bool:
+        return self.source.has_new_frame()

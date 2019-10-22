@@ -1,22 +1,21 @@
+import argparse
+import logging
+import threading
 from typing import List
 
 import cv2
-import logging
-import argparse
-
-import threading
 from networktables import NetworkTables
+from networktables.networktable import NetworkTable
 
 from bucketvision.capturers.cv2capture import Cv2Capture
-from bucketvision.displays.cv2display import Cv2Display
+from bucketvision.configs import configs
 from bucketvision.displays.cameraserverdisplay import CameraServerDisplay
-from bucketvision.postprocessors.angryprocessor import AngryProcessor
+from bucketvision.displays.cv2display import Cv2Display
 from bucketvision.multiplexers.capture_source_mux import CaptureSourceMux
 from bucketvision.multiplexers.output_mux_1_to_n import OutputMux1toN
-from bucketvision.sourceprocessors.resizesource import ResizeSource
+from bucketvision.postprocessors.angryprocessor import AngryProcessor
 from bucketvision.sourceprocessors.overlaysource import OverlaySource
-
-from bucketvision.configs import configs
+from bucketvision.sourceprocessors.resizesource import ResizeSource
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -61,14 +60,14 @@ if __name__ == '__main__':
         if not notified[0]:
             cond.wait()
 
-    VisionTable = NetworkTables.getTable("BucketVision")
-    VisionTable.putString("BucketVisionState", "Starting")
-    VisionTable.putNumber("Exposure", 50.0)
+    vision_table: NetworkTable = NetworkTables.getTable("BucketVision")
+    vision_table.putString("BucketVisionState", "Starting")
+    vision_table.putNumber("Exposure", 50.0)
 
     # create a source per camera
     capture_sources: List[Cv2Capture] = list()
     for i in range(args.num_cam):
-        cap = Cv2Capture(camera_num=i + args.offs_cam, network_table=VisionTable, exposure=0.01,
+        cap = Cv2Capture(camera_num=i + args.offs_cam, network_table=vision_table, exposure=0.01,
                          res=configs['camera_res'])
         capture_sources.append(cap)
         cap.start()
@@ -81,32 +80,32 @@ if __name__ == '__main__':
     process_output = output_mux.create_output()
     display_output = OverlaySource(ResizeSource(output_mux.create_output(), res=configs['output_res']))
 
-    VisionTable.putString("BucketVisionState", "Started Capture")
+    vision_table.putString("BucketVisionState", "Started Capture")
 
     # create post processor threads to process each image before sending it to the CameraServer (or window if testing)
     # this does the more complex target finding. We create multiple process threads to process the frames
     # as they are captured
-    proc_list = list()
+    proc_list: List[AngryProcessor] = list()
     for i in range(args.num_processors):
-        proc = AngryProcessor(process_output, network_table=VisionTable, debug_label="Proc{}".format(i))
+        proc = AngryProcessor(process_output, network_table=vision_table, debug_label="Proc{}".format(i))
         proc_list.append(proc)
         proc.start()
 
-    VisionTable.putString("BucketVisionState", "Started Process")
+    vision_table.putString("BucketVisionState", "Started Process")
 
     if args.test:
         window_display = Cv2Display(source=display_output)
         window_display.start()
-        VisionTable.putString("BucketVisionState", "Started CV2 Display")
+        vision_table.putString("BucketVisionState", "Started CV2 Display")
     else:
-        cs_display = CameraServerDisplay(source=display_output, network_table=VisionTable)
+        cs_display = CameraServerDisplay(source_processor=display_output, network_table=vision_table)
         cs_display.start()
-        VisionTable.putString("BucketVisionState", "Started CS Display")
+        vision_table.putString("BucketVisionState", "Started CS Display")
 
     try:
-        VisionTable.putValue("CameraNum", 0)
+        vision_table.putValue("CameraNum", 0)
         while True:
-            capture_source_mux.source_num = int(VisionTable.getEntry("CameraNum").value)
+            capture_source_mux.source_num = int(vision_table.getEntry("CameraNum").value)
             if args.test:
                 if window_display._new_frame:
                     cv2.imshow(window_display.window_name, window_display._frame)
@@ -125,5 +124,3 @@ if __name__ == '__main__':
             proc.stop()
         for cap in capture_sources:
             cap.stop()
-
-

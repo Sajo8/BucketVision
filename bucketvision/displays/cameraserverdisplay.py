@@ -1,7 +1,12 @@
 import logging
 import threading
+from typing import Tuple, Optional
 
 from cscore import CameraServer
+from networktables.networktable import NetworkTable
+
+from bucketvision.configs import configs
+from bucketvision.sourceprocessors.source_processor import SourceProcessor
 
 
 class CameraServerDisplay(threading.Thread):
@@ -28,36 +33,33 @@ class CameraServerDisplay(threading.Thread):
         (75, 180, 60)
     ]
 
-    def __init__(self, source=None, stream_name="Camera0", res=None, network_table=None):
+    def __init__(self, source_processor: Optional[SourceProcessor] = None, stream_name="Camera0", res: Tuple[int, int] = None, network_table: NetworkTable = None):
         self.logger = logging.getLogger("CSDisplay")
         self.stream_name = stream_name
-        self.source = source
+        self.source_processor = source_processor
         if res is not None:
             self.output_width = res[0]
             self.output_height = res[1]
         else:
-            self.output_width = int(self.source.width)
-            self.output_height = int(self.source.height)
+            if self.source_processor is not None:
+                self.output_width = int(self.source_processor.source_width)
+                self.output_height = int(self.source_processor.source_height)
 
         cs = CameraServer.getInstance()
         self.outstream = cs.putVideo(self.stream_name, self.output_width, self.output_height)
 
-        self._frame = None
-        self._new_frame = False
+        self.frame = None
+        self.new_frame = False
 
         self.net_table = network_table
 
         self.stopped = True
         threading.Thread.__init__(self)
 
-    @property
-    def frame(self):
-        return self._frame
-
-    @frame.setter
-    def frame(self, img):
-        self._frame = img
-        self._new_frame = True
+    def update_frame(self, img):
+        """Manually update the cameraserver frame. This is only used by the main() function below"""
+        self.frame = img
+        self.new_frame = True
 
     def stop(self):
         self.stopped = True
@@ -105,18 +107,19 @@ class CameraServerDisplay(threading.Thread):
 
     def run(self):
         while not self.stopped:
-            if self.source is None:
-                if self._new_frame:
-                    self.outstream.putFrame(self._frame)
-                    self._new_frame = False
-            elif self.source.new_frame:
-                self.outstream.putFrame(self.source.frame)
+            if self.source_processor is None:
+                # if we have no source processor, just put the frames straight to the output
+                if self.new_frame:
+                    self.outstream.putFrame(self.frame)
+                    self.new_frame = False
+            elif self.source_processor.has_new_frame():
+                self.outstream.putFrame(self.source_processor.process_frame())
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    sink = CameraServerDisplay()
+    sink = CameraServerDisplay(res=configs['output_res'])
     sink.start()
 
     import cv2
@@ -124,7 +127,7 @@ if __name__ == '__main__':
     cam = cv2.VideoCapture(0)
     while True:
         ret_val, img = cam.read()
-        sink.frame = img
+        sink.update_frame(img)
         # Esc to quit
         if cv2.waitKey(1) == 27:
             break

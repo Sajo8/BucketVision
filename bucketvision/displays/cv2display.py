@@ -1,6 +1,11 @@
-import threading
 import logging
+import threading
+from typing import Union
+
 import cv2
+
+from bucketvision.postprocessors.angryprocessor import AngryProcessor
+from bucketvision.sourceprocessors.source_processor import SourceProcessor
 
 
 class Cv2Display(threading.Thread):
@@ -8,7 +13,7 @@ class Cv2Display(threading.Thread):
     This displays output to a cv2 window (i.e. you are testing locally)
     """
 
-    def __init__(self, source=None, window_name="Camera0"):
+    def __init__(self, source: Union[SourceProcessor, AngryProcessor] = None, window_name="Camera0"):
         self.logger = logging.getLogger("Cv2Display")
         self.window_name = window_name
         self.source = source
@@ -38,8 +43,9 @@ class Cv2Display(threading.Thread):
     def run(self):
         while not self.stopped:
             if self.source is not None:
-                if self.source.new_frame:
+                if self.source.has_new_frame():
                     self.frame = self.source.process_frame()
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

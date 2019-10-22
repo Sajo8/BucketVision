@@ -1,5 +1,5 @@
 from distutils.core import setup
-from Cython.Build import cythonize
 
+from Cython.Build import cythonize
 
 setup(ext_modules=cythonize("processimage.py"))

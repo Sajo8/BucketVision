@@ -1,13 +1,14 @@
-import threading
 import logging
-
+import threading
 import time
 from typing import List, Union
 
+from networktables.networktable import NetworkTable
+
 from bucketvision.capturers.cv2capture import Cv2Capture
-from bucketvision.multiplexers.output_mux_1_to_n import OutputMux1toN
-from bucketvision.postprocessors.processimage import ProcessImage, VisionTarget
 from bucketvision.configs import configs
+from bucketvision.postprocessors.processimage import ProcessImage, VisionTarget
+from bucketvision.sourceprocessors.delegated_source import DelegatedSource
 
 
 class AngryProcessor(threading.Thread):
@@ -15,7 +16,9 @@ class AngryProcessor(threading.Thread):
     The AngryProcessor takes a source that has been resized and uses ProcessImage() to
     find a draw a target on the output before sending it to NetworkTables
     """
-    def __init__(self, source: Union[OutputMux1toN, Cv2Capture] = None, network_table=None, debug_label=""):
+
+    def __init__(self, source: Union[DelegatedSource, Cv2Capture] = None, network_table: NetworkTable = None,
+                 debug_label=""):
         self.logger = logging.getLogger("AngryProcesses")
         self.net_table = network_table
         self.source = source
@@ -36,6 +39,9 @@ class AngryProcessor(threading.Thread):
         self.camera_res = configs['camera_res']
         self.stopped = True
         threading.Thread.__init__(self)
+
+    def has_new_frame(self) -> bool:
+        return self.new_frame
 
     @property
     def frame(self):
@@ -85,7 +91,7 @@ class AngryProcessor(threading.Thread):
         frame_hist = list()
         while not self.stopped:
             if self.source is not None:
-                if self.source.new_frame:
+                if self.source.has_new_frame():
                     self._new_frame = True
             # continue
             if self._new_frame:
@@ -122,8 +128,7 @@ class AngryProcessor(threading.Thread):
 
 
 if __name__ == '__main__':
-    from bucketvision.capturers.cv2capture import Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, Cv2Capture, \
-    Cv2Capture
+    from bucketvision.capturers.cv2capture import Cv2Capture
     from bucketvision.displays.cv2display import Cv2Display
 
     logging.basicConfig(level=logging.DEBUG)
