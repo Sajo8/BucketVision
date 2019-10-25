@@ -4,7 +4,6 @@ from typing import Union
 
 import cv2
 
-from bucketvision.postprocessors.angryprocessor import AngryProcessor
 from bucketvision.sourceprocessors.source_processor import SourceProcessor
 
 
@@ -13,7 +12,7 @@ class Cv2Display(threading.Thread):
     This displays output to a cv2 window (i.e. you are testing locally)
     """
 
-    def __init__(self, source: Union[SourceProcessor, AngryProcessor] = None, window_name="Camera0"):
+    def __init__(self, source: SourceProcessor = None, window_name="Camera0"):
         self.logger = logging.getLogger("Cv2Display")
         self.window_name = window_name
         self.source = source
@@ -57,6 +56,7 @@ if __name__ == '__main__':
     while True:
         ret_val, img = cam.read()
         sink.frame = img
+        cv2.imshow("Cv2Display Test", sink.frame)
         # Esc to quit
         if cv2.waitKey(1) == 27:
             break

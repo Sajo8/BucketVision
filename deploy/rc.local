@@ -24,8 +24,8 @@ if [ "$_IP" ]; then
 fi
 
 
-/usr/bin/screen -d -m /usr/bin/python3 "/home/pi/BucketVision/BucketVision_AngryEyes_2019.py" -ip 10.41.83.2 -cam 2 -proc 1
+/usr/bin/screen -d -m /usr/bin/python3 "/home/pi/BucketVision/bucket_vision.py" -ip 10.41.83.2 -cams 2
 
-/usr/bin/screen -d -m /usr/bin/python3 "/home/pi/BucketVision/fast_cam.py"
+/usr/bin/screen -d -m /usr/bin/python3 "/home/pi/BucketVision/exposure_updater.py"
 
 exit 0

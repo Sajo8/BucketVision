@@ -10,19 +10,19 @@ from bucketvision.configs import configs
 
 def display_scaled_image(name, image, scale):
     """Function to display a scaled cv2 image
-	:param name:
-		Window name
-	:type name:
-		basestring
-	:param image:
-		Image as numpy array
-	:type image:
-		numpy.ndarray
-	:param scale:
-		Scale factor applied to image
-	:type scale:
-		float
-	"""
+    :param name:
+        Window name
+    :type name:
+        basestring
+    :param image:
+        Image as numpy array
+    :type image:
+        numpy.ndarray
+    :param scale:
+        Scale factor applied to image
+    :type scale:
+        float
+    """
     height, width = image.shape[:2]
     cv2.imshow(name, cv2.resize(image,
                                 (int(scale * width), int(scale * height)),
@@ -39,14 +39,14 @@ def point_dist(a, b):
 class Point(object):
     def __init__(self, x, y=None):
         """
-		Point class, is a point
-		:param x: x pos (normally in mm)
-		:param y: y pos (normally in mm)
+        Point class, is a point
+        :param x: x pos (normally in mm)
+        :param y: y pos (normally in mm)
 
-		-- or --
+        -- or --
 
-		:param x: (x, y) pos tuple
-		"""
+        :param x: (x, y) pos tuple
+        """
         if y is None:
             self.x = x[0]
             self.y = x[0]
@@ -56,12 +56,12 @@ class Point(object):
 
     def dist(self, point):
         """
-		Caculates the distance to the selected point
-		:param point: Another point
-		:type point: Point
-		:return: Distance
-		:rtype: float
-		"""
+        Caculates the distance to the selected point
+        :param point: Another point
+        :type point: Point
+        :return: Distance
+        :rtype: float
+        """
         return math.sqrt((self.x - point.x) ** 2 + (self.y - point.y) ** 2)
 
     def angle(self, point):
@@ -95,8 +95,8 @@ class VisionTarget(object):
     center_cap = 11.31  # cacualted based on specs
 
     camera_hfov = 80.0  # degrees
-    camera_hres = configs['camera_res'][0]  # pixels
-    camera_vres = configs['camera_res'][1]  # pixels
+    camera_hres = configs['camera_res'].width  # pixels
+    camera_vres = configs['camera_res'].height  # pixels
     camera_px_per_deg = camera_hres / camera_hfov
 
     def __init__(self, left_rect, right_rect):
@@ -111,11 +111,11 @@ class VisionTarget(object):
     @property
     def parallax(self):
         """
-		unitless parallax between the left and right strips,
-		returns Nan if we think one fo the rectangles is covered
-		negative if we are on the right side of the target
-		"should" be invariant of the distance to target
-		"""
+        unitless parallax between the left and right strips,
+        returns Nan if we think one fo the rectangles is covered
+        negative if we are on the right side of the target
+        "should" be invariant of the distance to target
+        """
         # aspect_tol = 0.1
         # Check left rect ratio
         # if not (1 - aspect_tol) * self.rect_aspect_ratio < self.l_rect.ratio:
@@ -130,8 +130,8 @@ class VisionTarget(object):
     @property
     def distance(self):
         """
-		returns an estimated distance to target in meters
-		"""
+        returns an estimated distance to target in meters
+        """
         pixel_height = (self.l_rect.height + self.r_rect.height) / 2.0
         angle = pixel_height / self.camera_px_per_deg
         dist_m = self.rect_height_m / math.tan(math.radians(angle))
@@ -140,9 +140,9 @@ class VisionTarget(object):
     @property
     def pos(self):
         """
-		returns the position as a tuple (x, y) from 0 to 1
-		the origin is in the top left of the image (like OpenCV)
-		"""
+        returns the position as a tuple (x, y) from 0 to 1
+        the origin is in the top left of the image (like OpenCV)
+        """
         pos_pix_x = (self.l_rect.center_pos.x + self.r_rect.center_pos.x) / 2.0
         pos_pix_y = (self.l_rect.center_pos.y + self.r_rect.center_pos.y) / 2.0
 
@@ -151,14 +151,14 @@ class VisionTarget(object):
     @property
     def size(self):
         """
-		returns the distance between the targets as a fraction of the image width (from 0 to 1)
-		"""
+        returns the distance between the targets as a fraction of the image width (from 0 to 1)
+        """
         return self.l_rect.center_pos.dist(self.r_rect.center_pos) / self.camera_hres
 
     def dict(self):
         """
-		Returns a dict of important features about the vision target
-		"""
+        Returns a dict of important features about the vision target
+        """
         return {
             'angle': self.angle,
             'parallax': self.parallax,
