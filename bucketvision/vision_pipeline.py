@@ -1,6 +1,6 @@
 import cv2
 import threading
-from typing import List
+from typing import List, Optional
 
 from bucketvision import Resolution, Frame
 from bucketvision.sources.capture_source_mux import CaptureSourceMux
@@ -13,23 +13,20 @@ class VisionPipeline(threading.Thread, Publisher):
     A vision pipeline takes a set of Camera captures as inputs
     and a series of processors that will process the image
 
-    It also can be registered with outputs to be called
-    when there is a new frame
+    It also publishes frame update events whenever the camera has a new frame
+    to process
     """
 
-    def __init__(self, sources: CaptureSourceMux, processors: List[SourceProcessor]=[], output_resolution: Resolution=None) -> None:
+    def __init__(self, sources: CaptureSourceMux, processors: List[SourceProcessor] = []) -> None:
         threading.Thread.__init__(self)
         Publisher.__init__(self)
-        self.sources = sources
+        self.cameras = sources
         self.processors = processors
 
-        self.last_frame: Frame = None
+        self.last_frame: Optional[Frame] = None
         self.stopped = True
 
-        if output_resolution is None:
-            self.output_resolution = output_resolution
-        else:
-            self.output_resolution = self.sources.get_camera_resolution()
+        self.output_resolution = self.cameras.get_camera_resolution()
 
     def stop(self):
         self.stopped = True
@@ -40,11 +37,16 @@ class VisionPipeline(threading.Thread, Publisher):
 
     def run(self):
         while not self.stopped:
-            if self.sources.has_new_frame():
-                frame = self.sources.next_frame()
+            if self.cameras.has_new_frame():
+                # if our camera has a new frame, grab it and process it
+                frame = self.cameras.next_frame()
+
+                # send the frame through each source processor
                 for processor in self.processors:
                     frame = processor.process_frame(frame)
 
+                # we are done processing, set the last_frame field and publish
+                # an updated frame to any subscribers
                 self.last_frame = frame
                 self.publish_frame_update(self, frame)
 
@@ -52,10 +54,7 @@ class VisionPipeline(threading.Thread, Publisher):
 if __name__ == '__main__':
     from networktables import NetworkTables
     from bucketvision.sources.cv2capture import Cv2Capture
-    from bucketvision.postprocessors.target_finder import TargetFinder
-    from bucketvision.sourceprocessors.overlay_source_processor import OverlaySourceProcessor
     from bucketvision.sourceprocessors.resize_source_processor import ResizeSourceProcessor
-    from bucketvision.sourceprocessors.target_source_processor import TargetSourceProcessor
 
     NetworkTables.initialize(server='localhost')
 
@@ -67,15 +66,11 @@ if __name__ == '__main__':
     camera = Cv2Capture(network_table=front_camera_table)
     camera.start()
 
-    target_finder = TargetFinder(vision_table)
-
     # create a simple pipeline with a source and two processors
     pipeline = VisionPipeline(
         CaptureSourceMux([camera]),
         [
             ResizeSourceProcessor(Resolution(320, 200)),
-            OverlaySourceProcessor(),
-            TargetSourceProcessor(target_finder)
         ]
     )
 
@@ -89,13 +84,10 @@ if __name__ == '__main__':
         global new_frame_available
         new_frame_available = True
 
-    # register the on_update function we made above with the target
-    # finder because it contains the final output we want
-    target_finder.add_subscriber(on_update)
-    target_finder.start()
 
-    # register the target finder as an output of the pipeline
-    pipeline.add_subscriber(target_finder.on_frame_update)
+    # add the on_update function we defined above as a subscriber
+    pipeline.add_subscriber(on_update)
+
     # start the pipeline. It is a thread that grabs new images from
     # the camera when they are available and processes them
     pipeline.start()
@@ -105,10 +97,10 @@ if __name__ == '__main__':
             new_frame_available = False
             # Note: on OSX you can only update UI windows on the main thread which is
             # why we grab the image data to show here
-            cv2.imshow('VisionPipelineTest', pipeline.last_frame.image_data)
+            if pipeline.last_frame is not None:
+                cv2.imshow('VisionPipelineTest', pipeline.last_frame.image_data)
         if cv2.waitKey(1) == 27:
             break  # esc to quit
 
     camera.stop()
     pipeline.stop()
-    target_finder.stop()

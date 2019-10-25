@@ -6,6 +6,7 @@ from bucketvision.sources.cv2capture import Cv2Capture
 class CaptureSourceMux:
     """
     This multiplexer takes captures from the camera as sources
+    Changing the source_num will change which camera we are interacting with
     """
 
     def __init__(self, capture_sources: List[Cv2Capture]):

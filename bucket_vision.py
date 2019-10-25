@@ -42,7 +42,7 @@ def connectionListener(connected, info):
 
 
 def init_cameras(num_cameras: int, camera_offset: int, vision_table: NetworkTable):
-    # setup some cameras to start capturing images
+    """ Initialize 1 or more cameras and start capturing images"""
     cameras: List[Cv2Capture] = list()
     for i in range(num_cameras):
         camera = Cv2Capture(camera_num=i + camera_offset, network_table=vision_table, exposure=.01)
@@ -111,7 +111,6 @@ def main():
 
     # register the target finder as an output of the pipeline
     pipeline.add_subscriber(target_finder.on_frame_update)
-    # pipeline.subscribe(on_update)
 
     # start the pipeline. It is a thread that grabs new images from
     # the camera when they are available and processes them
@@ -128,7 +127,6 @@ def main():
         global new_frame_available
         while True:
             if args.test:
-                vision_table.putString("BucketVisionState", "Started CV2 Display")
                 if new_frame_available:
                     new_frame_available = False
                     # Note: on OSX you can only update UI windows on the main thread which is

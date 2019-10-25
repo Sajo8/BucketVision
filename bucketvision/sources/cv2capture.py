@@ -2,7 +2,7 @@ import logging
 import threading
 import time
 import os
-from typing import Optional, Any, List
+from typing import Optional, List
 
 import cv2
 from networktables.networktable import NetworkTable
@@ -21,7 +21,7 @@ class Cv2Capture(threading.Thread):
     This thread continually captures frames from a camera
     """
 
-    def __init__(self, camera_num=0, network_table: NetworkTable = None, exposure: int = None):
+    def __init__(self, camera_num=0, network_table: NetworkTable = None, exposure: float = None):
         self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table = network_table
@@ -39,7 +39,7 @@ class Cv2Capture(threading.Thread):
         self._open_capture()
 
         self.camera_res = self.get_camera_resolution()
-        self.frame: Frame = None
+        self.frame: Optional[Frame] = None
 
         threading.Thread.__init__(self)
 
@@ -64,7 +64,7 @@ class Cv2Capture(threading.Thread):
         with self.frame_lock:
             return self.new_frame
 
-    def next_frame(self) -> Frame:
+    def next_frame(self) -> Optional[Frame]:
         """
         Return the next frame, when available
         This will reset the new_frame attribute to false
@@ -93,7 +93,7 @@ class Cv2Capture(threading.Thread):
                                    f"Failed to set resolution to ({res.width}, {res.height})!",
                                    level=logging.CRITICAL)
 
-    def set_camera_exposure(self, exposure: int) -> None:
+    def set_camera_exposure(self, exposure: float) -> None:
         self.exposure = exposure
         if self.capture_open:
             with self.capture_lock:
@@ -180,7 +180,9 @@ if __name__ == '__main__':
     print("Getting Frames")
     while True:
         if camera.has_new_frame():
-            cv2.imshow('my webcam', camera.next_frame().image_data)
+            frame = camera.next_frame()
+            if frame is not None:
+                cv2.imshow('my webcam', frame.image_data)
         if cv2.waitKey(1) == 27:
             break  # esc to quit
     camera.stop()

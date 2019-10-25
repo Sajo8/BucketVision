@@ -1,4 +1,4 @@
-from typing import List, Callable
+from typing import List, Callable, Optional
 
 from bucketvision import Frame
 
@@ -20,7 +20,11 @@ class Publisher:
         """
         self.subscribers.append(callback_function)
 
-    def publish_frame_update(self, pipeline: 'VisionPipeline', frame: Frame):
+    def publish_frame_update(self, pipeline: Optional['VisionPipeline'], frame: Frame):
         """Publish a new frame to any subscribers of this publisher"""
         for on_update_func in self.subscribers:
             on_update_func(pipeline, frame)
+
+
+# put this down here to make mypy happy
+from bucketvision.vision_pipeline import VisionPipeline

@@ -16,10 +16,8 @@ class CameraServerDisplay:
     """
 
     def __init__(self, output_resolution: Resolution, stream_name="Camera0") -> None:
-
-        self.stream_name = stream_name
-
         self.output_resolution = output_resolution
+        self.stream_name = stream_name
 
         # create and start a CameraServer
         cs = CameraServer.getInstance()
@@ -39,7 +37,7 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
     # start a camera server
-    camera_server = CameraServerDisplay(res=configs['output_res'])
+    camera_server = CameraServerDisplay(output_resolution=configs['output_res'])
 
     # start capturing input
     camera = Cv2Capture()

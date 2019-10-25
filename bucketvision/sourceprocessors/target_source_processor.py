@@ -18,9 +18,10 @@ class TargetSourceProcessor(SourceProcessor):
     """
 
     def __init__(self, target_finder: TargetFinder):
+        super().__init__()
         self.target_finder = target_finder
         self.processor = ProcessImage()
 
     def process_frame(self, frame: Frame) -> Frame:
-        frame.image = self.processor.drawtargets(frame.image_data, self.target_finder.results)
+        frame.image_data = self.processor.drawtargets(frame.image_data, self.target_finder.results)
         return frame
