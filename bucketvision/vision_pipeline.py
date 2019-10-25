@@ -3,7 +3,7 @@ import threading
 from typing import List, Optional
 
 from bucketvision import Resolution, Frame
-from bucketvision.sources.capture_source_mux import CaptureSourceMux
+from bucketvision.sources.camera_picker import CameraPicker
 from bucketvision.sourceprocessors.source_processor import SourceProcessor
 from bucketvision.publisher import Publisher
 
@@ -17,7 +17,7 @@ class VisionPipeline(threading.Thread, Publisher):
     to process
     """
 
-    def __init__(self, sources: CaptureSourceMux, processors: List[SourceProcessor] = []) -> None:
+    def __init__(self, sources: CameraPicker, processors: List[SourceProcessor] = []) -> None:
         threading.Thread.__init__(self)
         Publisher.__init__(self)
         self.cameras = sources
@@ -27,6 +27,9 @@ class VisionPipeline(threading.Thread, Publisher):
         self.stopped = True
 
         self.output_resolution = self.cameras.get_camera_resolution()
+
+    def add_source_processor(self, processor: SourceProcessor):
+        self.processors.append(processor)
 
     def stop(self):
         self.stopped = True
@@ -48,7 +51,7 @@ class VisionPipeline(threading.Thread, Publisher):
                 # we are done processing, set the last_frame field and publish
                 # an updated frame to any subscribers
                 self.last_frame = frame
-                self.publish_frame_update(self, frame)
+                self.publish_frame_update(frame)
 
 
 if __name__ == '__main__':
@@ -68,7 +71,7 @@ if __name__ == '__main__':
 
     # create a simple pipeline with a source and two processors
     pipeline = VisionPipeline(
-        CaptureSourceMux([camera]),
+        CameraPicker([camera]),
         [
             ResizeSourceProcessor(Resolution(320, 200)),
         ]
@@ -80,7 +83,7 @@ if __name__ == '__main__':
     new_frame_available = False
 
 
-    def on_update(pipeline: VisionPipeline, frame: Frame) -> None:
+    def on_update(frame: Frame) -> None:
         global new_frame_available
         new_frame_available = True
 

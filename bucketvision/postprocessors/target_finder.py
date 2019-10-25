@@ -31,15 +31,13 @@ class TargetFinder(threading.Thread, Publisher):
 
         self.processor = ProcessImage()
 
-        self.pipeline: Optional[VisionPipeline] = None
         self.results: List[VisionTarget] = list()
 
-    def on_frame_update(self, pipeline: VisionPipeline, frame: Frame):
+    def on_frame_update(self, frame: Frame):
         """
         This callback is registered with a VisionPipeline to be called
         when the vision pipeline has a new frame
         """
-        self.pipeline = pipeline
         self.next_frame = frame
         self.new_frame_available = True
 
@@ -79,7 +77,7 @@ class TargetFinder(threading.Thread, Publisher):
                 self.process_frame()
                 self._update_network_table()
                 if self.next_frame is not None:
-                    self.publish_frame_update(self.pipeline, self.next_frame)
+                    self.publish_frame_update(self.next_frame)
 
                 # update some stats
                 duration = time.time() - self.last_frame_time
@@ -88,4 +86,4 @@ class TargetFinder(threading.Thread, Publisher):
 
     def process_frame(self) -> None:
         if self.next_frame is not None:
-            self.results = self.processor.FindTarget(self.next_frame.image_data)
+            self.results = self.processor.find_target(self.next_frame.image_data)

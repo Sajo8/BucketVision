@@ -3,9 +3,9 @@ from typing import List
 from bucketvision.sources.cv2capture import Cv2Capture
 
 
-class CaptureSourceMux:
+class CameraPicker:
     """
-    This multiplexer takes captures from the camera as sources
+    The CameraPicker switches between the cameras based on the source_num
     Changing the source_num will change which camera we are interacting with
     """
 

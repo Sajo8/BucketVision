@@ -1,32 +1,9 @@
 import math
-import os
 from typing import List
 
 import cv2
-import numpy as np
 
 from bucketvision.configs import configs
-
-
-def display_scaled_image(name, image, scale):
-    """Function to display a scaled cv2 image
-    :param name:
-        Window name
-    :type name:
-        basestring
-    :param image:
-        Image as numpy array
-    :type image:
-        numpy.ndarray
-    :param scale:
-        Scale factor applied to image
-    :type scale:
-        float
-    """
-    height, width = image.shape[:2]
-    cv2.imshow(name, cv2.resize(image,
-                                (int(scale * width), int(scale * height)),
-                                interpolation=cv2.INTER_CUBIC))
 
 
 def point_dist(a, b):
@@ -91,7 +68,6 @@ class VisionTarget(object):
     rect_height_m = rect_height * 0.0254
     rect_width = 2
     rect_aspect_ratio = rect_height / rect_width
-    angle = 90 - (2 * 14.5)  # angled toward each other at ~14.5 degrees
     center_cap = 11.31  # cacualted based on specs
 
     camera_hfov = 80.0  # degrees
@@ -178,30 +154,10 @@ class ProcessImage(object):
     Min_Ang = 50
     Max_Ang = 75
 
-    colors = [
-        (75, 25, 230),
-        (25, 225, 255),
-        (200, 130, 0),
-        (48, 130, 245),
-        (240, 240, 70),
-        (230, 50, 240),
-        (190, 190, 250),
-        (128, 128, 0),
-        (255, 190, 230),
-        (40, 110, 170),
-        (200, 250, 255),
-        (0, 0, 128),
-        (195, 255, 170),
-        (128, 0, 0),
-        (128, 128, 128),
-        (255, 255, 255),
-        (75, 180, 60)
-    ]
-
     def __init__(self):
         pass
 
-    def FindTarget(self, image) -> List[VisionTarget]:
+    def find_target(self, image) -> List[VisionTarget]:
         height, width, _ = image.shape
         image_area = height * width
 
@@ -274,21 +230,3 @@ class ProcessImage(object):
         found_targets = [VisionTarget(t[0], t[1]) for t in rect_pairs]
 
         return found_targets
-
-    @staticmethod
-    def drawtargets(image, targets):
-        height, width, _ = image.shape
-        for index, target in enumerate(targets):
-            found_cont = [np.int0(cv2.boxPoints(r)) for r in [target.l_rect.raw_rect, target.r_rect.raw_rect]]
-            try:
-                color = ProcessImage.colors[index]
-                image = cv2.drawContours(image, found_cont, -1, color, 3)
-                x, y = target.pos
-                image = cv2.circle(image, (int(x * width), int(y * height)),
-                                   int((target.size * width) / 4),
-                                   color, -1)
-            except IndexError:
-                # More targets than colors!
-                pass
-        return image
-

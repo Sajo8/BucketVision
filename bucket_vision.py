@@ -11,7 +11,7 @@ from bucketvision import Resolution, Frame
 from bucketvision.configs import configs
 from bucketvision.sources.cv2capture import Cv2Capture
 from bucketvision.displays.camera_server_display import CameraServerDisplay
-from bucketvision.sources.capture_source_mux import CaptureSourceMux
+from bucketvision.sources.camera_picker import CameraPicker
 from bucketvision.postprocessors.target_finder import TargetFinder
 from bucketvision.sourceprocessors.overlay_source_processor import OverlaySourceProcessor
 from bucketvision.sourceprocessors.resize_source_processor import ResizeSourceProcessor
@@ -27,7 +27,7 @@ notified = False
 new_frame_available = False
 
 
-def on_update(pipeline: VisionPipeline, frame: Frame) -> None:
+def on_update(frame: Frame) -> None:
     global new_frame_available
     new_frame_available = True
 
@@ -94,14 +94,9 @@ def main():
     # in the pipeline, so create the TargetFinder first
     target_finder = TargetFinder(vision_table)
 
-    # register the on_update function we made above with the target
-    # finder because it contains the final output we want
-    target_finder.add_subscriber(on_update)
-    target_finder.start()
-
     # create a simple pipeline with the camera sources and a few processors
     pipeline = VisionPipeline(
-        CaptureSourceMux(cameras),
+        CameraPicker(cameras),
         [
             ResizeSourceProcessor(Resolution(320, 200)),
             OverlaySourceProcessor(),
@@ -109,8 +104,14 @@ def main():
         ]
     )
 
-    # register the target finder as an output of the pipeline
+    # the TargetFinder subscribes to frame updates from the pipeline. This is
+    # so the TargetFinder can process an image that has been shrunk
     pipeline.add_subscriber(target_finder.on_frame_update)
+
+    # register the on_update function we made above with the target
+    # finder because it contains the final output we want
+    target_finder.add_subscriber(on_update)
+    target_finder.start()
 
     # start the pipeline. It is a thread that grabs new images from
     # the camera when they are available and processes them

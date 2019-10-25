@@ -23,7 +23,7 @@ class CameraServerDisplay:
         cs = CameraServer.getInstance()
         self.out_stream = cs.putVideo(self.stream_name, self.output_resolution.width, self.output_resolution.height)
 
-    def on_update(self, pipeline: VisionPipeline, frame: Frame) -> None:
+    def on_update(self, frame: Frame) -> None:
         """
         On update is called by the vision pipeline to let us know
         there is a new frame available from the camera
@@ -32,7 +32,7 @@ class CameraServerDisplay:
 
 
 if __name__ == '__main__':
-    from bucketvision.sources.capture_source_mux import CaptureSourceMux
+    from bucketvision.sources.camera_picker import CameraPicker
     from bucketvision.sources.cv2capture import Cv2Capture
     logging.basicConfig(level=logging.DEBUG)
 
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     camera.start()
 
     # make a pipeline with no source processors
-    pipeline = VisionPipeline(CaptureSourceMux([camera]))
+    pipeline = VisionPipeline(CameraPicker([camera]))
     pipeline.add_subscriber(camera_server.on_update)
     pipeline.start()
 
