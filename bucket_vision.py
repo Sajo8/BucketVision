@@ -93,6 +93,8 @@ def main():
     # create a TargetFinder. We will pass this to a TargetSourceProcessor
     # in the pipeline, so create the TargetFinder first
     target_finder = TargetFinder(vision_table)
+    target_finder.start()
+    target_source_processor = TargetSourceProcessor(target_finder)
 
     # create a simple pipeline with the camera sources and a few processors
     pipeline = VisionPipeline(
@@ -100,28 +102,22 @@ def main():
         [
             ResizeSourceProcessor(Resolution(320, 200)),
             OverlaySourceProcessor(),
-            TargetSourceProcessor(target_finder)
         ]
     )
-
-    # the TargetFinder subscribes to frame updates from the pipeline. This is
-    # so the TargetFinder can process an image that has been shrunk
-    pipeline.add_subscriber(target_finder.on_frame_update)
-
-    # register the on_update function we made above with the target
-    # finder because it contains the final output we want
-    target_finder.add_subscriber(on_update)
-    target_finder.start()
-
-    # start the pipeline. It is a thread that grabs new images from
-    # the camera when they are available and processes them
-    pipeline.start()
 
     vision_table.putString("BucketVisionState", "Started Process")
 
     cs_display = CameraServerDisplay(configs['output_res'])
-    pipeline.add_subscriber(cs_display.on_update)
     vision_table.putString("BucketVisionState", "Started CS Display")
+
+    # Add three subscribers to the pipeline. These three functions will be called anytime we have a new frame
+    pipeline.add_subscriber(target_finder.on_frame_update)
+    pipeline.add_subscriber(cs_display.on_update)
+    pipeline.add_subscriber(on_update)
+
+    # start the pipeline. It is a thread that grabs new images from
+    # the camera when they are available and processes them
+    pipeline.start()
 
     try:
         # grab a reference to the global variable that will be updated by the TargetFinder's update pub
@@ -132,7 +128,11 @@ def main():
                     new_frame_available = False
                     # Note: on OSX you can only update UI windows on the main thread which is
                     # why we grab the image data to show here
-                    cv2.imshow('VisionPipelineTest', pipeline.last_frame.image_data)
+
+                    # draw targets before showing the image
+                    # TODO: this means the targets won't show up on the camera server...
+                    frame = target_source_processor.process_frame(pipeline.last_frame)
+                    cv2.imshow('VisionPipelineTest', frame.image_data)
                 if cv2.waitKey(1) == 27:
                     break  # esc to quit
     finally:

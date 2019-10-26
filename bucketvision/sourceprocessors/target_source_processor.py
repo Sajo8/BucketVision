@@ -49,7 +49,7 @@ class TargetSourceProcessor(SourceProcessor):
 
     def draw_targets(self, image) -> Any:
         height, width, _ = image.shape
-        for index, target in enumerate(self.target_finder.results):
+        for index, target in enumerate(self.target_finder.vision_targets):
             found_cont = [np.int0(cv2.boxPoints(r)) for r in [target.l_rect.raw_rect, target.r_rect.raw_rect]]
             try:
                 color = TargetSourceProcessor.colors[index]

@@ -1,14 +1,13 @@
 import logging
 import threading
-import time
 import os
-from typing import Optional, List
+from typing import Optional
 
 import cv2
 from networktables.networktable import NetworkTable
 
 from bucketvision import Resolution, Frame
-from bucketvision.configs import configs
+from bucketvision.fps_logger import FPSLogger
 
 try:
     import networktables
@@ -30,8 +29,7 @@ class Cv2Capture(threading.Thread):
         # Threading Locks
         self.capture_lock = threading.Lock()
         self.frame_lock = threading.Lock()
-
-        self.new_frame = False
+        self.new_frame_event = threading.Event()
 
         self.stopped = True
 
@@ -60,19 +58,14 @@ class Cv2Capture(threading.Thread):
                                    "Failed to open camera {}!".format(self.camera_num),
                                    level=logging.CRITICAL)
 
-    def has_new_frame(self) -> bool:
-        with self.frame_lock:
-            return self.new_frame
-
     def next_frame(self) -> Optional[Frame]:
         """
         Return the next frame, when available
         This will reset the new_frame attribute to false
         """
         with self.frame_lock:
-            self.new_frame = False
-        # For maximum thread (or process) safety, you should copy the frame, but this is very expensive
-        return self.frame
+            # For maximum thread (or process) safety, you should copy the frame, but this is very expensive
+            return self.frame
 
     def get_camera_resolution(self) -> Optional[Resolution]:
         if self.capture_open:
@@ -126,16 +119,9 @@ class Cv2Capture(threading.Thread):
         threading.Thread.start(self)
 
     def run(self):
-        start_time = time.time()
+        capture_fps_logger = FPSLogger(f"\nCamera{self.camera_num} Capture")
         first_frame = True
-        frame_hist: List[float] = list()
         while not self.stopped:
-            if len(frame_hist) == 30:
-                # every 100 frames, output an FPS number
-                print("Capture{}: {:.1f}fps".format(self.camera_num, 1 / (sum(frame_hist) / len(frame_hist))))
-                frame_hist = list()
-
-            # capture a new frame from the camera
             # TODO: MAke this less crust, I would like to setup a callback
             try:
                 net_table_exposure = self.net_table.getEntry("Exposure").value
@@ -143,20 +129,26 @@ class Cv2Capture(threading.Thread):
                     self.set_camera_exposure(net_table_exposure)
             except:
                 pass
+
+            # lock any camera operations while we read from the camera
             with self.capture_lock:
                 # capture the next image
                 _, img = self.capture.read()
+
+            # lock the frame so we can update it with the image from the camera
             with self.frame_lock:
                 # set the frame var to the img we just captured
                 self.frame = Frame(self.camera_res, self.exposure, img)
+
+                # tell any threads waiting for a new frame that we have one
+                self.new_frame_event.set()
+                self.new_frame_event.clear()
+
                 if first_frame:
                     first_frame = False
-                    print(img.shape)
-                self.new_frame = True
+                    print(self.frame.image_data.shape)
 
-            # keep a track of time per frame so we can compute FPS
-            frame_hist.append(time.time() - start_time)
-            start_time = time.time()
+            capture_fps_logger.log_frame()
 
 
 if __name__ == '__main__':
@@ -175,14 +167,14 @@ if __name__ == '__main__':
     camera = Cv2Capture(network_table=FrontCameraTable)
     camera.start()
 
-    os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brightness']))
+    # os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brightness']))
 
     print("Getting Frames")
     while True:
-        if camera.has_new_frame():
-            frame = camera.next_frame()
-            if frame is not None:
-                cv2.imshow('my webcam', frame.image_data)
+        # camera.new_frame.wait()
+        frame = camera.next_frame()
+        if frame is not None:
+            cv2.imshow('my webcam', frame.image_data)
         if cv2.waitKey(1) == 27:
             break  # esc to quit
     camera.stop()

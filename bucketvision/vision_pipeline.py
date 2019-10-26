@@ -3,6 +3,7 @@ import threading
 from typing import List, Optional
 
 from bucketvision import Resolution, Frame
+from bucketvision.fps_logger import FPSLogger
 from bucketvision.sources.camera_picker import CameraPicker
 from bucketvision.sourceprocessors.source_processor import SourceProcessor
 from bucketvision.publisher import Publisher
@@ -39,19 +40,30 @@ class VisionPipeline(threading.Thread, Publisher):
         threading.Thread.start(self)
 
     def run(self):
+        capture_fps_logger = FPSLogger("VisionPipeline Capture")
+        process_fps_logger = FPSLogger("VisionPipeline Process")
         while not self.stopped:
-            if self.cameras.has_new_frame():
-                # if our camera has a new frame, grab it and process it
-                frame = self.cameras.next_frame()
+            # wait for the next frame
+            self.cameras.wait_for_new_frame()
 
-                # send the frame through each source processor
-                for processor in self.processors:
-                    frame = processor.process_frame(frame)
+            # log our FPS for capturing images
+            capture_fps_logger.log_frame()
 
-                # we are done processing, set the last_frame field and publish
-                # an updated frame to any subscribers
-                self.last_frame = frame
-                self.publish_frame_update(frame)
+            # if our camera has a new frame, grab it and process it
+            frame = self.cameras.next_frame()
+
+            # send the frame through each source processor
+            for processor in self.processors:
+                frame = processor.process_frame(frame)
+
+
+            # log our FPS for processing images
+            process_fps_logger.log_frame()
+
+            # we are done processing, set the last_frame field and publish
+            # an updated frame to any subscribers
+            self.last_frame = frame
+            self.publish_frame_update(frame)
 
 
 if __name__ == '__main__':
